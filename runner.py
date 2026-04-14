@@ -164,6 +164,58 @@ def detect_idle(response_text: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+_langfuse_available = None  # lazy check
+
+
+def _check_langfuse() -> bool:
+    """Check if Langfuse is configured and importable (cached)."""
+    global _langfuse_available
+    if _langfuse_available is not None:
+        return _langfuse_available
+    if not os.getenv("LANGFUSE_SECRET_KEY"):
+        _langfuse_available = False
+        return False
+    try:
+        from langfuse import observe, propagate_attributes  # noqa: F401
+        from langfuse.langchain import CallbackHandler  # noqa: F401
+
+        _langfuse_available = True
+    except ImportError:
+        logger.warning("langfuse not installed; tracing disabled")
+        _langfuse_available = False
+    return _langfuse_available
+
+
+def _invoke_with_langfuse(agent, invoke_config, run_id, agent_id, round_num):
+    """Invoke agent within a Langfuse @observe span so all LLM calls
+    and tool calls are grouped under a single trace."""
+    from langfuse import observe, propagate_attributes
+    from langfuse.langchain import CallbackHandler
+
+    # @observe creates a parent span; everything inside is nested
+    @observe(name=f"{agent_id}_round_{round_num}")
+    def _traced_invoke():
+        handler = CallbackHandler()
+        cfg = {**invoke_config, "callbacks": [handler]}
+        return agent.invoke(
+            {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
+            config=cfg,
+        )
+
+    with propagate_attributes(
+        session_id=run_id,
+        user_id=agent_id,
+        trace_name=f"{agent_id}_round_{round_num}",
+        tags=[f"agent:{agent_id}", f"round:{round_num}", run_id],
+        metadata={
+            "round": str(round_num),
+            "agent_id": agent_id,
+            "run_id": run_id,
+        },
+    ):
+        return _traced_invoke()
+
+
 def run_simulation(
     agents: dict,
     max_rounds: int,
@@ -204,14 +256,23 @@ def run_simulation(
             logger.info("[Round %d] %s: executing...", round_num, agent_id)
 
             try:
-                result = agent.invoke(
-                    {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
-                    config={
-                        "configurable": {
-                            "thread_id": f"{run_id}_{agent_id}",
-                        }
-                    },
-                )
+                # Build invoke config
+                invoke_config = {
+                    "configurable": {
+                        "thread_id": f"{run_id}_{agent_id}",
+                    }
+                }
+
+                # Invoke with Langfuse tracing if available
+                if _check_langfuse():
+                    result = _invoke_with_langfuse(
+                        agent, invoke_config, run_id, agent_id, round_num
+                    )
+                else:
+                    result = agent.invoke(
+                        {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
+                        config=invoke_config,
+                    )
 
                 # Extract response text from the last message
                 response_text = ""
@@ -269,6 +330,16 @@ def run_simulation(
         rounds_completed,
         elapsed,
     )
+
+    # Flush Langfuse traces
+    if os.getenv("LANGFUSE_SECRET_KEY"):
+        try:
+            from langfuse import get_client
+
+            get_client().flush()
+            logger.info("Langfuse traces flushed")
+        except Exception:
+            logger.warning("Langfuse flush failed", exc_info=True)
 
     return rounds_completed
 
@@ -389,6 +460,10 @@ def main() -> None:
     logger.info("Seed: %d", args.seed)
     logger.info("Max rounds: %d", args.max_rounds)
     logger.info("Temperature: %.2f", args.temperature)
+    logger.info(
+        "Langfuse: %s",
+        "enabled" if os.getenv("LANGFUSE_SECRET_KEY") else "disabled (no LANGFUSE_SECRET_KEY)",
+    )
 
     # Bail out early if max_rounds is 0 (directory setup only)
     if args.max_rounds == 0:

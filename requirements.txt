@@ -3,4 +3,5 @@ deepagents>=0.5.0
 langchain>=0.3.0
 langchain-openai>=0.3.0
 langchain-anthropic>=0.3.0
+langfuse>=4.0.0
 python-dotenv>=1.0.0

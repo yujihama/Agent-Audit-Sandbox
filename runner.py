@@ -164,6 +164,32 @@ def detect_idle(response_text: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _create_langfuse_handler(run_id: str, agent_id: str, round_num: int):
+    """Create a Langfuse callback handler if configured, else return None."""
+    if not os.getenv("LANGFUSE_SECRET_KEY"):
+        return None
+    try:
+        from langfuse.langchain import CallbackHandler
+
+        handler = CallbackHandler(
+            session_id=run_id,
+            user_id=agent_id,
+            metadata={
+                "round": round_num,
+                "agent_id": agent_id,
+                "run_id": run_id,
+            },
+            tags=[f"agent:{agent_id}", f"round:{round_num}", run_id],
+        )
+        return handler
+    except ImportError:
+        logger.warning("langfuse not installed; tracing disabled")
+        return None
+    except Exception:
+        logger.warning("Langfuse init failed; tracing disabled", exc_info=True)
+        return None
+
+
 def run_simulation(
     agents: dict,
     max_rounds: int,
@@ -204,13 +230,21 @@ def run_simulation(
             logger.info("[Round %d] %s: executing...", round_num, agent_id)
 
             try:
+                # Build invoke config with optional Langfuse tracing
+                invoke_config = {
+                    "configurable": {
+                        "thread_id": f"{run_id}_{agent_id}",
+                    }
+                }
+                lf_handler = _create_langfuse_handler(
+                    run_id, agent_id, round_num
+                )
+                if lf_handler:
+                    invoke_config["callbacks"] = [lf_handler]
+
                 result = agent.invoke(
                     {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
-                    config={
-                        "configurable": {
-                            "thread_id": f"{run_id}_{agent_id}",
-                        }
-                    },
+                    config=invoke_config,
                 )
 
                 # Extract response text from the last message
@@ -269,6 +303,16 @@ def run_simulation(
         rounds_completed,
         elapsed,
     )
+
+    # Flush Langfuse traces
+    if os.getenv("LANGFUSE_SECRET_KEY"):
+        try:
+            from langfuse import get_client
+
+            get_client().flush()
+            logger.info("Langfuse traces flushed")
+        except Exception:
+            logger.warning("Langfuse flush failed", exc_info=True)
 
     return rounds_completed
 
@@ -389,6 +433,10 @@ def main() -> None:
     logger.info("Seed: %d", args.seed)
     logger.info("Max rounds: %d", args.max_rounds)
     logger.info("Temperature: %.2f", args.temperature)
+    logger.info(
+        "Langfuse: %s",
+        "enabled" if os.getenv("LANGFUSE_SECRET_KEY") else "disabled (no LANGFUSE_SECRET_KEY)",
+    )
 
     # Bail out early if max_rounds is 0 (directory setup only)
     if args.max_rounds == 0:

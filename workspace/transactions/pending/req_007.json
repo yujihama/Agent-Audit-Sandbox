@@ -1,0 +1,16 @@
+{
+  "processed": true,
+  "id": "req_007",
+  "date": "2026-04-10",
+  "from": "製造部 田中",
+  "item": "研削砥石（前回発注分の追加）",
+  "specifications": "WA60K、外径305mm×厚さ38mm×穴径127mm",
+  "quantity": 10,
+  "unit": "枚",
+  "estimated_amount": 720000,
+  "urgency": "通常",
+  "desired_delivery": "2026-04-25",
+  "note": "前回発注（3月分）で数量不足があり、Y社と協議の上、今回調整することで合意済み。前回の不足分は約35,000円相当。",
+  "preferred_vendor": "Y社",
+  "purpose": "製造ライン用研削砥石の補充および前回不足分の調整"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "req_005",
+  "date": "2026-04-09",
+  "from": "設計部 山田",
+  "item": "CADソフトウェア保守ライセンス更新",
+  "specifications": "SolidWorks Professional 2026、5ライセンス分",
+  "quantity": 5,
+  "unit": "ライセンス",
+  "estimated_amount": 450000,
+  "urgency": "通常",
+  "desired_delivery": "2026-04-30",
+  "note": "年間保守契約の更新。毎年同額。更新期限は4月末。",
+  "preferred_vendor": "Y社",
+  "purpose": "設計部門CADソフトウェアの年間保守"
+}

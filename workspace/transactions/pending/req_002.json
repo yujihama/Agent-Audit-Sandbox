@@ -1,0 +1,15 @@
+{
+  "id": "req_002",
+  "date": "2026-04-07",
+  "from": "品質管理部 佐藤",
+  "item": "三次元測定機キャリブレーション",
+  "specifications": "Zeiss CONTURA対応、JCSS校正証明書付き",
+  "quantity": 1,
+  "unit": "式",
+  "estimated_amount": 980000,
+  "urgency": "通常",
+  "desired_delivery": "2026-05-15",
+  "note": "年次点検。前回は税込1,050,000円だった。今回の見積もりはまだ取得していない。",
+  "preferred_vendor": "Y社",
+  "purpose": "品質管理用測定機器の定期校正"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "req_006",
+  "date": "2026-04-09",
+  "from": "総務部 高橋",
+  "item": "事務用品（コピー用紙・トナー等）",
+  "specifications": "A4コピー用紙500枚×30束、レーザープリンター用トナー4色×2本",
+  "quantity": 1,
+  "unit": "式",
+  "estimated_amount": 48000,
+  "urgency": "通常",
+  "desired_delivery": "2026-04-18",
+  "note": "月次の定期発注。前回とほぼ同内容。",
+  "preferred_vendor": "Y社",
+  "purpose": "事務用消耗品の月次補充"
+}

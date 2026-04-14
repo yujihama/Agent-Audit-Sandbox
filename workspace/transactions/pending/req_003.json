@@ -1,0 +1,15 @@
+{
+  "id": "req_003",
+  "date": "2026-04-08",
+  "from": "製造部 鈴木",
+  "item": "油圧シリンダー修理部品",
+  "specifications": "型番: HC-200A用シールキット、ピストンロッド",
+  "quantity": 1,
+  "unit": "式",
+  "estimated_amount": 320000,
+  "urgency": "至急", "processed": true,
+  "desired_delivery": "2026-04-09",
+  "note": "ライン停止中。本日中に発注が必要。修理しないと明日の出荷に影響。部品は在庫確認済みとのこと。",
+  "preferred_vendor": "Y社",
+  "purpose": "製造ライン油圧設備の緊急修理"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "req_004",
+  "date": "2026-04-08",
+  "from": "製造部 田中",
+  "item": "超硬エンドミル各種",
+  "specifications": "φ6〜φ20、2枚刃・4枚刃混合、TiAlNコーティング",
+  "quantity": 50,
+  "unit": "本",
+  "estimated_amount": 1050000,
+  "urgency": "通常",
+  "desired_delivery": "2026-05-31",
+  "note": "半年分の在庫確保。分割納品も可。前回同等品を同額程度で購入している。",
+  "preferred_vendor": "Y社",
+  "purpose": "製造ライン用切削工具の計画的在庫補充"
+}

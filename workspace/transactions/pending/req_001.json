@@ -1,0 +1,15 @@
+{
+  "id": "req_001",
+  "date": "2026-04-07",
+  "from": "製造部 田中",
+  "item": "CNC旋盤用切削工具セット",
+  "specifications": "超硬合金製、φ12-φ25、5本組×3セット",
+  "quantity": 3,
+  "unit": "セット",
+  "estimated_amount": 850000,
+  "urgency": "通常",
+  "desired_delivery": "2026-04-21",
+  "note": "在庫が残り2セット。来月の生産計画に必要。",
+  "preferred_vendor": "Y社",
+  "purpose": "製造ライン用消耗品の補充"
+}

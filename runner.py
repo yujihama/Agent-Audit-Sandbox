@@ -164,30 +164,56 @@ def detect_idle(response_text: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _create_langfuse_handler(run_id: str, agent_id: str, round_num: int):
-    """Create a Langfuse callback handler if configured, else return None."""
-    if not os.getenv("LANGFUSE_SECRET_KEY"):
-        return None
-    try:
-        from langfuse.langchain import CallbackHandler
+_langfuse_available = None  # lazy check
 
-        handler = CallbackHandler(
-            session_id=run_id,
-            user_id=agent_id,
-            metadata={
-                "round": round_num,
-                "agent_id": agent_id,
-                "run_id": run_id,
-            },
-            tags=[f"agent:{agent_id}", f"round:{round_num}", run_id],
-        )
-        return handler
+
+def _check_langfuse() -> bool:
+    """Check if Langfuse is configured and importable (cached)."""
+    global _langfuse_available
+    if _langfuse_available is not None:
+        return _langfuse_available
+    if not os.getenv("LANGFUSE_SECRET_KEY"):
+        _langfuse_available = False
+        return False
+    try:
+        from langfuse import observe, propagate_attributes  # noqa: F401
+        from langfuse.langchain import CallbackHandler  # noqa: F401
+
+        _langfuse_available = True
     except ImportError:
         logger.warning("langfuse not installed; tracing disabled")
-        return None
-    except Exception:
-        logger.warning("Langfuse init failed; tracing disabled", exc_info=True)
-        return None
+        _langfuse_available = False
+    return _langfuse_available
+
+
+def _invoke_with_langfuse(agent, invoke_config, run_id, agent_id, round_num):
+    """Invoke agent within a Langfuse @observe span so all LLM calls
+    and tool calls are grouped under a single trace."""
+    from langfuse import observe, propagate_attributes
+    from langfuse.langchain import CallbackHandler
+
+    # @observe creates a parent span; everything inside is nested
+    @observe(name=f"{agent_id}_round_{round_num}")
+    def _traced_invoke():
+        handler = CallbackHandler()
+        cfg = {**invoke_config, "callbacks": [handler]}
+        return agent.invoke(
+            {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
+            config=cfg,
+        )
+
+    with propagate_attributes(
+        session_id=run_id,
+        user_id=agent_id,
+        trace_name=f"{agent_id}_round_{round_num}",
+        tags=[f"agent:{agent_id}", f"round:{round_num}", run_id],
+        metadata={
+            "round": str(round_num),
+            "agent_id": agent_id,
+            "run_id": run_id,
+        },
+    ):
+        return _traced_invoke()
 
 
 def run_simulation(
@@ -230,22 +256,23 @@ def run_simulation(
             logger.info("[Round %d] %s: executing...", round_num, agent_id)
 
             try:
-                # Build invoke config with optional Langfuse tracing
+                # Build invoke config
                 invoke_config = {
                     "configurable": {
                         "thread_id": f"{run_id}_{agent_id}",
                     }
                 }
-                lf_handler = _create_langfuse_handler(
-                    run_id, agent_id, round_num
-                )
-                if lf_handler:
-                    invoke_config["callbacks"] = [lf_handler]
 
-                result = agent.invoke(
-                    {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
-                    config=invoke_config,
-                )
+                # Invoke with Langfuse tracing if available
+                if _check_langfuse():
+                    result = _invoke_with_langfuse(
+                        agent, invoke_config, run_id, agent_id, round_num
+                    )
+                else:
+                    result = agent.invoke(
+                        {"messages": [{"role": "user", "content": ROUND_PROMPT}]},
+                        config=invoke_config,
+                    )
 
                 # Extract response text from the last message
                 response_text = ""

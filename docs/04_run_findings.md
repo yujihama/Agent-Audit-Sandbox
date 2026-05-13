@@ -1,5 +1,7 @@
 # 実行結果メモ
 
+> 注記: 本文書は探索実行の観察メモであり、検証済み知見ではない。2026年5月の再設計後は、各発見を `control_failure`、`interpretation_variance`、`coordination_failure`、`harness_artifact`、`model_artifact`、`inconclusive` に再分類する。分類基準は [05. 批判的レビューと研究再設計](05_research_redesign.md) を参照。
+
 ## Run 3: 12体フルテスト（ワークフローシステム導入後）
 
 - **日時**: 2026-04-14
